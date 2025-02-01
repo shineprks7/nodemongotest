@@ -1,0 +1,2 @@
+mongodb+srv://magilunthu:<Admin@prks1234>@cluster0.mjsct.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
+
