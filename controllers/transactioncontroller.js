@@ -75,46 +75,163 @@ exports.getAllTransactionByAccount = async (req, res) => {
 };
 
 
-exports.csvExportBySearchFilter = async (req, res) => {
+
+
+exports.getAllTransactionByAccountSearchAndFilter = async (req, res) => {
 
     const { accountnumber , fromdate, todate, search } = req.body;
 
 
+    let isValid = function(value)
+    {
+        if(typeof value != undefined && value != null && value != "")
 
+        {
+
+            return true;
+
+        }
+
+        return false;
+    }
      
 
       let transactions;
 
       if(search != '')
       {
-        if( todate && fromdate )
+        if( isValid(todate) && isValid(fromdate) )
+            {
+                let fromdateFormatted = new Date(fromdate);
+    
+                 let todateFormatted = new Date(todate);
+            
+              transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$gte:fromdateFormatted, $lte:todateFormatted}});
+    
+            }
+            else if(isValid(fromdate))
+            {
+                let fromdateFormatted = new Date(fromdate);
+    
+                transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$gte:fromdateFormatted}});
+    
+            }
+            else if(isValid(todate))
+            {
+                let todateFormatted = new Date(todate);
+    
+                transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$lte:todateFormatted}});
+    
+            }
+            else
+            {
+                transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"}});
+            
+            }
+
+    }
+    else
+    {
+        if( isValid(todate) && isValid(fromdate) )
+            {
+                let fromdateFormatted = new Date(fromdate);
+
+             let todateFormatted = new Date(todate);
+            
+                transactions = await Transaction.find({accountnumber:accountnumber, date:{$gte:fromdateFormatted, $lte:todateFormatted}});
+    
+            }
+            else if(isValid(fromdate))
+            {
+                let fromdateFormatted = new Date(fromdate);
+
+                transactions = await Transaction.find({accountnumber:accountnumber,date:{$gte:fromdateFormatted}});
+    
+            }
+            else if(isValid(todate))
+            {
+                let todateFormatted = new Date(todate);
+
+                transactions = await Transaction.find({accountnumber:accountnumber,date:{$lte:todateFormatted}});
+    
+            }
+            else
+            {
+                transactions = await Transaction.find({accountnumber:accountnumber});
+
+            }
+    }
+
+   
+
+
+   
+    res.status(200).json(transactions);
+};
+exports.csvExportBySearchFilter = async (req, res) => {
+
+    const { accountnumber , fromdate, todate, search } = req.query;
+
+
+
+
+    let isValid = function(value)
+    {
+        if(typeof value != undefined && value != null && value != "")
+
+        {
+
+            return true;
+
+        }
+
+        return false;
+    }
+
+
+    
+     
+
+      let transactions;
+
+      try
+      {
+
+      if(search != '')
+      {
+        if( isValid(todate) && isValid(fromdate) )
         {
             let fromdateFormatted = new Date(fromdate);
 
              let todateFormatted = new Date(todate);
         
-          transactions = await Transaction.find({accountnumber:accountnumber,title:{$regex:search},date:{$gte:fromdateFormatted, $lte:todateFormatted}}).lean();
+          transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$gte:fromdateFormatted, $lte:todateFormatted}}).lean();
 
         }
-        else if(fromdate)
+        else if(isValid(fromdate))
         {
             let fromdateFormatted = new Date(fromdate);
 
-            transactions = await Transaction.find({accountnumber:accountnumber,title:{$regex:search},date:{$gte:fromdateFormatted}}).lean();
+            transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$gte:fromdateFormatted}}).lean();
 
         }
-        else if(todate)
+        else if(isValid(todate))
         {
             let todateFormatted = new Date(todate);
 
-            transactions = await Transaction.find({accountnumber:accountnumber,title:{$regex:search},date:{$lte:todateFormatted}}).lean();
+            transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"},date:{$lte:todateFormatted}}).lean();
 
+        }
+        else
+        {
+            transactions = await Transaction.find({accountnumber:accountnumber,title:{"$regex":search,"$options":"i"}}).lean();
+        
         }
 
     }
     else
     {
-        if( todate && fromdate )
+        if( isValid(todate) && isValid(fromdate) )
             {
                 let fromdateFormatted = new Date(fromdate);
 
@@ -123,22 +240,38 @@ exports.csvExportBySearchFilter = async (req, res) => {
                 transactions = await Transaction.find({accountnumber:accountnumber, date:{$gte:fromdateFormatted, $lte:todateFormatted}}).lean();
     
             }
-            else if(fromdate)
+            else if(isValid(fromdate))
             {
                 let fromdateFormatted = new Date(fromdate);
 
                 transactions = await Transaction.find({accountnumber:accountnumber,date:{$gte:fromdateFormatted}}).lean();
     
             }
-            else if(todate)
+            else if(isValid(todate))
             {
                 let todateFormatted = new Date(todate);
 
                 transactions = await Transaction.find({accountnumber:accountnumber,date:{$lte:todateFormatted}}).lean();
     
             }
+            else
+            {
+                transactions = await Transaction.find({accountnumber:accountnumber}).lean();
+
+            }
     }
 
+    if(!transactions && transactions.length == 0)
+    {
+
+        res.status(404).json({"message":"not found"});
+
+        return false;
+
+
+    }
+       
+   
     const parser = new Parser();
 
     const csv = parser.parse(transactions);
@@ -151,6 +284,22 @@ exports.csvExportBySearchFilter = async (req, res) => {
 
    
     res.status(200).send(csv);
+
+}
+catch(e)
+{
+
+
+
+    res.status(401).json({"error":e});
+
+
+}
+    
+    
+
+
+    
 };
 
 

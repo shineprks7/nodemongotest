@@ -12,4 +12,9 @@ router.post("/getAllTransactionByAccountSearchAndFilter", transactionController.
 
 router.get("/getAllTransactions", transactionController.getAllTransactions);
 
+
+router.get("/csvExportBySearchFilter", transactionController.csvExportBySearchFilter);
+
+
+
 module.exports = router;
